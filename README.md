@@ -137,28 +137,105 @@ deepseek mcp add remote-tool --url https://example.com/mcp
 | `execute_timeout` | number 或 null | 执行超时（秒），null 使用全局默认 |
 | `read_timeout` | number 或 null | 读取超时（秒），null 使用全局默认 |
 
-### 多项目隔离
+### 多项目使用指南
 
-通过 `env` 字段为不同项目设置独立的数据库文件：
+#### 自动隔离（零配置，推荐）
+
+记忆服务器的数据库路径由 `MEMORY_DB_PATH` 环境变量控制，默认值为 `./memory_advanced.db`（当前工作目录）。这意味着：**你在哪个项目目录下启动 DeepSeek TUI，数据库文件就会自动生成在那里。**
+
+换项目无需任何操作——MCP 服务只注册一次，数据库自动隔离：
+
+```
+项目 A 目录/
+├── .deepseek/instructions.md   ← 记忆策略
+├── memory_advanced.db           ← 自动生成，只含项目 A 的记忆
+└── ...
+
+项目 B 目录/
+├── .deepseek/instructions.md   ← 记忆策略
+├── memory_advanced.db           ← 自动生成，只含项目 B 的记忆
+└── ...
+```
+
+**操作步骤：**
+
+1. 在新项目目录下创建 `.deepseek/instructions.md`，复制下面这段：
+
+```markdown
+## 记忆策略
+
+你在本项目中可以访问以下三个 MCP 工具：
+
+| 工具 | 用途 |
+|------|------|
+| `remember` | 存入记忆，`content` 必填，`category` 可选默认 `general` |
+| `recall` | 语义搜索记忆，`query` 必填，`limit` 默认 5 |
+| `forget` | 按 ID 删除记忆，`memory_id` 必填 |
+
+### 自动化规则
+
+1. **会话开始时** — 先调用 `recall(query="<当前任务关键词>", limit=5)` 搜索相关历史记忆。
+2. **执行过程中** — 遇到值得记录的信息使用 `remember` 存入。
+3. **记忆管理** — 发现过时或错误的记忆时使用 `forget` 删除。
+
+建议分类：`项目约定`、`技术笔记`、`用户偏好`、`决策记录`
+```
+
+2. 在该项目目录下启动 DeepSeek TUI，MCP 服务会自动连接。
+
+3. 首次使用 `remember` 时，`memory_advanced.db` 自动创建在该目录。
+
+4. 换个项目，重复步骤 1-2——数据库完全独立。
+
+#### 共享数据库（多项目共用记忆）
+
+如果你希望多个项目共享同一个记忆库，在 `mcp.json` 中指定固定路径：
 
 ```json
 {
   "servers": {
-    "memory-project-a": {
+    "memory": {
       "command": "python",
       "args": ["C:\\path\\to\\memory_advanced.py"],
-      "env": { "MEMORY_DB_PATH": "C:\\projects\\project-a\\.memory.db" },
-      "enabled": true
-    },
-    "memory-project-b": {
-      "command": "python",
-      "args": ["C:\\path\\to\\memory_advanced.py"],
-      "env": { "MEMORY_DB_PATH": "C:\\projects\\project-b\\.memory.db" },
+      "env": { "MEMORY_DB_PATH": "C:\\shared\\common_memory.db" },
       "enabled": true
     }
   }
 }
 ```
+
+这样所有项目都读写 `C:\shared\common_memory.db`，真正做到跨项目知识共享。
+
+#### 多实例注册（不同项目用不同模型）
+
+如果你需要为不同项目使用不同的嵌入模型（如中文项目用 BGE，英文项目用 MiniLM），可以注册多个实例：
+
+```json
+{
+  "servers": {
+    "memory-zh": {
+      "command": "python",
+      "args": ["C:\\path\\to\\memory_advanced.py"],
+      "env": { "MEMORY_DB_PATH": "C:\\projects\\chinese-app\\.memory.db" },
+      "enabled": true
+    },
+    "memory-en": {
+      "command": "python",
+      "args": ["C:\\path\\to\\memory_advanced_en.py"],
+      "env": { "MEMORY_DB_PATH": "C:\\projects\\english-app\\.memory.db" },
+      "enabled": true
+    }
+  }
+}
+```
+
+#### 总结
+
+| 需求 | 方案 | 操作 |
+|------|------|------|
+| 换项目自动隔离 | 默认行为 | 在新目录启动，复制 `instructions.md` |
+| 多项目共享记忆 | 固定路径 | 在 `mcp.json` 中设 `MEMORY_DB_PATH` |
+| 不同项目用不同模型 | 多实例 | 注册多个 MCP 服务器，各指不同脚本/DB |
 
 ### 让 AI 自动使用记忆
 
