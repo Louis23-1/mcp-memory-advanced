@@ -1,0 +1,20 @@
+# MCP 所需Python库
+__pycache__/
+*.pyc
+*.pyo
+
+# 记忆数据库文件
+*.db
+
+# DeepSeek 内部数据
+.deepseek/
+deepseek_data-*/
+
+# 系统文件
+Thumbs.db
+.DS_Store
+
+# 虚拟环境
+venv/
+.venv/
+env/
