@@ -6,8 +6,13 @@ __pycache__/
 # 记忆数据库文件
 *.db
 
+# 个人对话导出数据（不纳入版本控制）
+user.json
+conversations.json
+
 # DeepSeek 内部数据
 .deepseek/
+!.deepseek/instructions.md
 deepseek_data-*/
 
 # 系统文件
