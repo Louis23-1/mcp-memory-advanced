@@ -1,10 +1,18 @@
-# MCP 所需Python库
+# Python
 __pycache__/
+.pytest_cache/
 *.pyc
 *.pyo
+*.pyd
+.eggs/
+*.egg-info/
+dist/
+build/
 
 # 记忆数据库文件
 *.db
+*.db-wal
+*.db-shm
 
 # 个人对话导出数据（不纳入版本控制）
 user.json
@@ -18,8 +26,12 @@ deepseek_data-*/
 # 系统文件
 Thumbs.db
 .DS_Store
+*.swp
+*.swo
+*~
 
 # 虚拟环境
 venv/
 .venv/
 env/
+.venv*/
